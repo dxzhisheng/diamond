@@ -81,6 +81,7 @@ public class AdminService {
 
 
     public synchronized boolean login(String userName, String password) {
+        log.warn("========================");
         String passwordInFile = this.properties.getProperty(userName);
         if (passwordInFile != null)
             return passwordInFile.equals(password);

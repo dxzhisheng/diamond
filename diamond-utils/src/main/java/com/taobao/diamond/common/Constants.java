@@ -73,7 +73,7 @@ public class Constants {
     public static final int RECV_WAIT_TIMEOUT = ONCE_TIMEOUT * 5;// 毫秒
 
     /** 获取数据的URI地址，如果不带ip，那么轮换使用ServerAddress中的地址请求 */
-    public static String HTTP_URI_FILE = "/url";
+    public static String HTTP_URI_FILE = "/diamond_server/config.co";
 
     /** 获取ServerAddress的配置uri */
     public static String CONFIG_HTTP_URI_FILE = HTTP_URI_FILE;

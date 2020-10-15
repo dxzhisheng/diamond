@@ -34,7 +34,8 @@ import com.taobao.diamond.utils.TimeUtils;
 @Service
 public class PersistService {
 
-    private static final String JDBC_DRIVER_NAME = "com.mysql.jdbc.Driver";
+    //private static final String JDBC_DRIVER_NAME = "com.mysql.jdbc.Driver";
+    private static final String JDBC_DRIVER_NAME = "com.mysql.cj.jdbc.Driver";
 
     // 最大记录条数
     private static final int MAX_ROWS = 10000;
