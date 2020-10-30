@@ -136,14 +136,14 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
         if (null == scheduledExecutor || scheduledExecutor.isTerminated()) {
             scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         }
-
+        //创建root地址，然后开始监听
         localConfigInfoProcessor.start(this.diamondConfigure.getFilePath() + "/" + DATA_DIR);
         serverAddressProcessor = new ServerAddressProcessor(this.diamondConfigure, this.scheduledExecutor);
         serverAddressProcessor.start();
 
         this.snapshotConfigInfoProcessor =
                 new SnapshotConfigInfoProcessor(this.diamondConfigure.getFilePath() + "/" + SNAPSHOT_DIR);
-        // 设置domainNamePos值
+        // 设置domainNamePos值--随机化起始服务器地址
         randomDomainNamePos();
         initHttpClient();
 
@@ -231,6 +231,7 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
      * 循环探测配置信息是否变化，如果变化，则再次向DiamondServer请求获取对应的配置信息
      */
     private void rotateCheckConfigInfo() {
+        //定时线程池check
         scheduledExecutor.schedule(new Runnable() {
             public void run() {
                 if (!isRun) {
@@ -238,8 +239,11 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
                     return;
                 }
                 try {
+                    //本地配置项内容变更回调
                     checkLocalConfigInfo();
+                    //主动和服务器端同步配置变化，回调
                     checkDiamondServerConfigInfo();
+                    //补偿回调
                     checkSnapshot();
                 }
                 catch (Exception e) {
@@ -349,11 +353,13 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
             for (Entry<String, CacheData> cacheDataEntry : cacheDatas.entrySet()) {
                 final CacheData cacheData = cacheDataEntry.getValue();
                 try {
+                    //本地获取变更的配置项信息
                     String configInfo = getLocalConfigureInfomation(cacheData);
                     if (null != configInfo) {
                         if (log.isInfoEnabled()) {
                             log.info("本地配置信息被读取, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
                         }
+                        //回调
                         popConfigInfo(cacheData, configInfo);
                         continue;
                     }
@@ -382,6 +388,7 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
         configureInfomation.setGroup(group);
         cacheData.incrementFetchCountAndGet();
         if (null != this.subscriberListener.getExecutor()) {
+            //若设置了执行器，使用执行器执行(变更量大时，提高性能，一般用不到)
             this.subscriberListener.getExecutor().execute(new Runnable() {
                 public void run() {
                     try {
@@ -395,6 +402,7 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
             });
         }
         else {
+            //回调监听器
             try {
                 subscriberListener.receiveConfigInfo(configureInfomation);
                 saveSnapshot(dataId, group, configInfo);

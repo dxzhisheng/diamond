@@ -114,12 +114,15 @@ public class WatchKey {
      * @return
      */
     boolean check() {
+        //若监听单元中到变化事件列表不未空，表示此单元有变更事件
         if (this.changedEvents != null && this.changedEvents.size() > 0)
             return true;
         if (!this.valid)
             return false;
         List<WatchEvent<?>> list = new LinkedList<WatchEvent<?>>();
+        //相比最初到监听path目录，是否有变更。
         if (check(root, list)) {
+            //将收集到到变更事件列表引用于事件列表对象，返回存在事件变更
             this.changedEvents = list;
             return true;
         }
@@ -134,13 +137,17 @@ public class WatchKey {
         File nodeNewFile = new File(nodePath.getAbsolutePath());
         if (nodePath != null) {
             if (node.isRoot()) {
+                //若是root且不存在，表明root被删除。因为check本方法多处调用，需要区分root和非root
                 if (!nodeNewFile.exists())
+                    //文件不存在，说明相比之前文件，此文件被删除了
                     return fireOnRootDeleted(changedEvents, nodeNewFile);
                 else {
+                    //若文件存在，需要进一步check其文件内或者子目录是否有变更
                     return checkNodeChildren(node, changedEvents, nodeNewFile);
                 }
             }
             else {
+                //因为check本方法多处调用，需要区分root和非root
                 return checkNodeChildren(node, changedEvents, nodeNewFile);
             }
         }
@@ -151,8 +158,9 @@ public class WatchKey {
 
     private boolean checkNodeChildren(PathNode node, List<WatchEvent<?>> changedEvents, File nodeNewFile) {
         boolean changed = false;
+        // 查看之前保存在内存中node结构对应在硬盘中的文件目录情况
         Iterator<PathNode> it = node.getChildren().iterator();
-        // 用于判断是否有新增文件或者目录的现有名称集合
+        // 保存内存node中的目录的现有名称path集合，用于判断是否有新增文件
         Set<String> childNameSet = new HashSet<String>();
         while (it.hasNext()) {
             PathNode child = it.next();
@@ -161,9 +169,10 @@ public class WatchKey {
             File childNewFile = new File(childPath.getAbsolutePath());
             // 1、判断文件是否还存在
             if (!childNewFile.exists() && filterSet.contains(StandardWatchEventKind.ENTRY_DELETE)) {
+                //文件不存在，且监听filterSet类别中有删除场景，则在变更事件列表中添加删除变更事件
                 changed = true;
                 changedEvents.add(new WatchEvent<Path>(StandardWatchEventKind.ENTRY_DELETE, 1, childPath));
-                it.remove();// 移除节点
+                it.remove();// 移除节点，从原来的node内存结构中删除此节点。
             }
             // 2、如果是文件，判断是否被修改
             if (childPath.isFile()) {
@@ -184,8 +193,10 @@ public class WatchKey {
         File[] newChildFiles = nodeNewFile.listFiles();
         if(newChildFiles!=null)
         for (File newChildFile : newChildFiles) {
+            //判断磁盘中的文件夹是否在内存node结构里面。childNameSet上面存储了当前内存node目录结构
             if (!childNameSet.contains(newChildFile.getName())
                     && filterSet.contains(StandardWatchEventKind.ENTRY_CREATE)) {
+                //若磁盘中某文件目录不在内存结构中，表明为新增。在变更事件列表中添加新创事件。
                 changed = true;
                 Path newChildPath = new Path(newChildFile);
                 changedEvents.add(new WatchEvent<Path>(StandardWatchEventKind.ENTRY_CREATE, 1, newChildPath));

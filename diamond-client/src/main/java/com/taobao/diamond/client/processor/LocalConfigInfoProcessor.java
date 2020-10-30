@@ -53,6 +53,7 @@ public class LocalConfigInfoProcessor {
      */
     public String getLocalConfigureInfomation(CacheData cacheData, boolean force) throws IOException {
         String filePath = getFilePath(cacheData.getDataId(), cacheData.getGroup());
+        //existFiles在之前存储了变更的path
         if (!existFiles.containsKey(filePath)) {
             if (cacheData.isUseLocalConfigInfo()) {
                 cacheData.setLastModifiedHeader(Constants.NULL);
@@ -69,10 +70,13 @@ public class LocalConfigInfoProcessor {
             String content = FileUtils.getFileContent(filePath);
             return content;
         }
-        // 判断是否变更，没有变更，返回null
+        // 判断是否变更
         if (!filePath.equals(cacheData.getLocalConfigInfoFile())
                 || existFiles.get(filePath) != cacheData.getLocalConfigInfoVersion()) {
+            //首次或者有变更
+            //LocalConfigInfoVersion是existFiles放入变更数据时的时间戳
             String content = FileUtils.getFileContent(filePath);
+            //更改缓存中的配置项路径和版本号
             cacheData.setLocalConfigInfoFile(filePath);
             cacheData.setLocalConfigInfoVersion(existFiles.get(filePath));
             cacheData.setUseLocalConfigInfo(true);
@@ -84,6 +88,7 @@ public class LocalConfigInfoProcessor {
             return content;
         }
         else {
+            //没有变更，返回null
             cacheData.setUseLocalConfigInfo(true);
 
             if (log.isInfoEnabled()) {
@@ -113,7 +118,9 @@ public class LocalConfigInfoProcessor {
         if (this.singleExecutor == null || singleExecutor.isTerminated()) {
             singleExecutor = Executors.newSingleThreadScheduledExecutor();
         }
+        //创建root目录
         initDataDir(rootPath);
+        //监控本地root目录变更
         startCheckLocalDir(rootPath);
     }
 
@@ -142,7 +149,7 @@ public class LocalConfigInfoProcessor {
         final WatchService watcher = FileSystem.getDefault().newWatchService();
 
         Path path = new Path(new File(filePath));
-        // 注册事件
+        // 注册事件，将filePath下的文件目录加入到WatchService#watchedKeys监听队列里.
         watcher.register(path, true, StandardWatchEventKind.ENTRY_CREATE, StandardWatchEventKind.ENTRY_DELETE,
             StandardWatchEventKind.ENTRY_MODIFY);
         // 第一次运行，主动check
@@ -178,6 +185,7 @@ public class LocalConfigInfoProcessor {
     private void checkAtFirst(final WatchService watcher) {
         watcher.check();
         WatchKey key = null;
+        //遍历变更事件列表处理变更事件
         while ((key = watcher.poll()) != null) {
             processEvents(key);
         }

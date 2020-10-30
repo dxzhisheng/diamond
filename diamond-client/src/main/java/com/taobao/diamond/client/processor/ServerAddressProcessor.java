@@ -71,10 +71,13 @@ public class ServerAddressProcessor {
         isRun = true;
         initHttpClient();
         if (this.diamondConfigure.isLocalFirst()) {
+            //若配置localFirst=true，先从本地获取，若无，则从服务列表服务器中获取，然后保存到本地
             acquireServerAddressFromLocal();
         }
         else {
+            //若配置localFirst=false，先从远程同步获取一次到本地，然后，线程池定时同步服务器列表到本地。
             synAcquireServerAddress();
+            //异步线程池定时异步同步
             asynAcquireServerAddress();
         }
 
@@ -91,6 +94,7 @@ public class ServerAddressProcessor {
 
 
     private void initHttpClient() {
+        //用于获取地址服务器列表
         HostConfiguration hostConfiguration = new HostConfiguration();
 
         SimpleHttpConnectionManager connectionManager = new SimpleHttpConnectionManager();
@@ -117,12 +121,16 @@ public class ServerAddressProcessor {
 
         int acquireCount = 0;
         if (diamondConfigure.getDomainNameList().size() == 0) {
+            //若配置中没有服务器列表，先从本地配置中获取。
             reloadServerAddresses();
             if (diamondConfigure.getDomainNameList().size() == 0) {
+                //若本地没有获取到服务器列表，从服务列表服务器中获取。
                 if (!acquireServerAddressOnce(acquireCount)) {
                     acquireCount++;
+                    //没有获取到，再获取一次
                     if (acquireServerAddressOnce(acquireCount)) {
-                        // 存入本地文件
+                        //若获取到了，会存入本地ServerAddress文件中
+                        // 存入本地文件/diamond/ServerAddress
                         storeServerAddressesToLocal();
                         log.info("在同步获取服务器列表时，向日常ConfigServer服务器获取到了服务器列表");
                     }
@@ -132,7 +140,7 @@ public class ServerAddressProcessor {
                 }
                 else {
                     log.info("在同步获取服务器列表时，向线上ConfigServer服务器获取到了服务器列表");
-                    // 存入本地文件
+                    //若获取到了，会存入本地ServerAddress文件中
                     storeServerAddressesToLocal();
                 }
             }

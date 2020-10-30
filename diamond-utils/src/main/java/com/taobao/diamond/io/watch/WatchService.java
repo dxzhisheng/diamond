@@ -56,11 +56,13 @@ public final class WatchService {
      */
     public void check() {
         synchronized (this) {
+            //遍历监听队列中每个监听单元
             Iterator<WatchKey> it = watchedKeys.iterator();
             while (it.hasNext()) {
                 WatchKey key = it.next();
                 try {
                     if (key.check()) {
+                        //若监听单元里有变更，将此放入变更的单元队列中
                         changedKeys.add(key);
                         it.remove();
                     }

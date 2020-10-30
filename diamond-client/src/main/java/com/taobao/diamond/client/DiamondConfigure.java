@@ -146,6 +146,7 @@ public class DiamondConfigure {
      * @param pollingIntervalTime
      */
     public void setPollingIntervalTime(int pollingIntervalTime) {
+        //不允许小于15秒
         if (pollingIntervalTime < Constants.POLLING_INTERVAL_TIME && !MockServer.isTestMode()) {
             return;
         }
